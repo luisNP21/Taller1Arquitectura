@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Categorías de Zapatos</h2>
+        <p class="fs-5 text-muted">Navega por la categoría del pedido y selecciona cantidades y tallas para completar el pedido.</p>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for cat in categorias %}
+        <div class="col">
+            <div class="card h-100 shadow" style="background-color: {% cycle '#f9c74f' '#90be6d' '#f9844a' %};">
+                <img src="{% static cat.imagen %}" class="card-img-top p-2" alt="{{ cat.nombre }}" style="height: 200px; object-fit: cover;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ cat.nombre }}</h5>
+                    <a href="{% url cat.url %}" class="btn btn-light mt-2">Ir a Categoría</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

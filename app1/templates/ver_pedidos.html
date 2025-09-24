@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Pedidos</h2>
+        <p class="fs-5 text-muted">Navega por Pedidos</p>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for p in pedidos %}
+        <div class="col">
+            <a href="{% url 'ver_zapatos_pedido' p.id %}" class="text-decoration-none">
+                <div class="card h-100 shadow" style="background-color: {% cycle '#f9c74f' '#90be6d' '#f9844a' %};">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Pedido n°{{ p.id }}</h5>
+                        <p class="card-text"><b>Cliente:</b> {{ p.cliente.nombre }}</p>
+                        <p class="card-text"><b>Fecha de Creación:</b> {{ p.fecha_creacion }}</p>
+                        <p class="card-text"><b>Observaciones:</b> {{ p.observaciones }}</p>
+                        <p class="card-text"><b>Estado:</b> {{ p.estado }}</p>
+                    </div>
+
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Clientes</h2>
+        <p class="fs-5 text-muted">Navega por la categoría Clientes</p>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for c in clientes %}
+        <div class="col">
+            <div class="card h-100 shadow" style="background-color: {% cycle '#f9c74f' '#90be6d' '#f9844a' %};">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ c.nombre }}</h5>
+                    <p class="card-text"><b>Dirección:</b> {{ c.direccion }}</p>
+                    <p class="card-text"><b>Telefono:</b> {{ c.telefono }}</p>
+                    <p class="card-text"><b>Email:</b> {{ c.correo }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <a href="{% url 'crear_clientes' %}" class="btn btn-light mt-2">Crear Cliente Nuevo</a>
+</div>
+{% endblock %}

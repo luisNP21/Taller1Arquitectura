@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <h2>Error de seguridad - CSRF</h2>
+    <p>{{ message }}</p>
+    <a href="{% url 'login' %}" class="btn btn-primary">Volver al login</a>
+</div>
+{% endblock %}

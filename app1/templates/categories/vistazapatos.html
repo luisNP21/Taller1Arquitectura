@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">{{ categoria.nombre }}</h2>
+        <p class="fs-5 text-muted">Selecciona los zapatos, talla y color para agregar al pedido.</p>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for zapato in zapatos %}
+        <div class="col">
+            <div class="card h-100 shadow" style="background-color: {% cycle '#f9c74f' '#90be6d' '#f9844a' %};">
+                <img src="{% static zapato.imagen %}" class="card-img-top p-2" alt="{{ zapato.nombre }}" style="height: 200px; object-fit: cover;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ zapato.nombre }}</h5>
+                    <form method="POST" action="{% url 'agregar_pedido' zapato.id %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="talla">Talla:</label>
+                            <select class="form-control" name="talla" required>
+                                {% for talla in zapato.tallas %}
+                                <option value="{{ talla }}">{{ talla }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mt-2">
+                            <label for="color">Color:</label>
+                            <select class="form-control" name="color" required>
+                                {% for color in zapato.colores %}
+                                <option value="{{ color }}">{{ color }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary mt-3">Agregar al Pedido</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Zodiak{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand img {
+            height: 50px;
+        }
+        .btn-green {
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-weight: bold;
+        }
+        .btn-green:hover {
+            background-color: #45a049;
+            padding: 8px 16px;
+        }
+        .btn-yellow {
+            background-color: #eeeb8e; /* Naranja fuerte */
+            color: rgb(133, 94, 94);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <style>
+        .navbar-custom {
+            background-color: #f4c946; /* Naranja fuerte */
+        }
+    </style>
+    
+    <nav class="navbar navbar-expand-lg navbar-custom px-4 py-2">
+
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="#">
+                <img src="{% static 'images/logo2.png' %}" alt="Logo Zodiak">
+            </a>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'landing' %}" class="btn btn-green me-2">Inicio</a>
+                <a href="{% url 'categorias' %}" class="btn btn-green me-2">Categorías</a>
+                <a href="{% url 'ver_carrito' %}" class="btn btn-green me-2">Ver Carrito</a>
+                <a href="{% url 'ver_clientes' %}" class="btn btn-green me-2">Clientes</a>
+                <a href="{% url 'ver_pedidos' %}" class="btn btn-green me-2">Ver Pedidos</a>
+                <a href="{% url 'ver_stock' %}" class="btn btn-green me-2">Ver Stock</a>
+                <a href="{% url 'cargar_qr' %}" class="btn btn-green me-2">Cargar QR</a>
+                
+                {% if user.is_authenticated %}
+                    <a class="btn btn-yellow" href="{% url 'logout' %}">Log Out</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="p-4">
+        {% block content %}
+        {% endblock %}
+    </div>
+</body>
+</html>

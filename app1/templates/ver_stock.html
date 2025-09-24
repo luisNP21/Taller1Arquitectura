@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="fw-bold">Filtra los Zapatos</h2>
+
+    <form method="post" action="{% url 'ver_stock' %}">
+        {% csrf_token %}
+        <h4 class="mt-4">Selecciona las opciones:</h4>
+        
+        <div class="form-group mt-4">
+            <label for="referencia">Referencias</label>
+            <select name="referencia" id="referencia" class="form-control">
+                <option value="">Seleccione una referencia</option>
+                {% for referencia in referencias %}
+                    <option value="{{ referencia }}">{{ referencia }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mt-4">
+            <label for="modelo">Modelos</label>
+            <select name="modelo" id="modelo" class="form-control">
+                <option value="">Seleccione un modelo</option>
+                {% for modelo in modelos %}
+                    <option value="{{ modelo }}">{{ modelo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mt-4">
+            <label for="talla">Tallas</label>
+            <select name="talla" id="talla" class="form-control">
+                <option value="">Seleccione una talla</option>
+                {% for talla in tallas %}
+                    <option value="{{ talla }}">{{ talla }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mt-4">
+            <label for="color">Colores</label>
+            <select name="color" id="color" class="form-control">
+                <option value="">Seleccione un color</option>
+                {% for color in colores %}
+                    <option value="{{ color }}">{{ color }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mt-4">
+            <label>Sexo:</label><br>
+            <label><input type="checkbox" name="sexo" value="H"> Hombre</label>
+            <label><input type="checkbox" name="sexo" value="M"> Mujer</label>
+        </div>
+
+        <div class="form-group mt-4">
+            <label>Estado:</label><br>
+            <label><input type="checkbox" name="estado" value="Pendientes"> Pendiente</label>
+            <label><input type="checkbox" name="estado" value="Producción"> En Producción</label>
+            <label><input type="checkbox" name="estado" value="Anulado"> Anulado</label>
+            <label><input type="checkbox" name="estado" value="Completado"> Completado</label>
+            <label><input type="checkbox" name="estado" value="Entregado"> Entregado</label>
+            <label><input type="checkbox" name="estado" value="Bodega"> En Bodega</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Filtrar</button>
+        <span class="badge bg-info text-dark ms-3" style="font-size: 1.1em; vertical-align: middle;">
+            Número Total de Zapatos: {{ total }}
+        </span>
+    </form>
+
+    <table class="table table-striped mt-4">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Modelo</th>
+                <th>Referencia</th>
+                <th>Talla</th>
+                <th>Color</th>
+                <th>Sexo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for zapato in zapatos %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ zapato.modelo }}</td>
+                <td>{{ zapato.referencia }}</td>
+                <td>{{ zapato.talla }}</td>
+                <td>{{ zapato.color }}</td>
+                <td>{{ zapato.sexo }}</td>
+                <td>{{ zapato.estado }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center">No hay resultados para los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'landing' %}" class="btn btn-secondary">Volver al inicio</a>
+    </div>
+</div>
+{% endblock %}

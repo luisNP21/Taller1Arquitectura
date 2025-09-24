@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+{% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+<div class="container mt-4">
+    <h2>Carrito</h2>
+
+    <!-- Verificar si hay pedidos -->
+    {% if pedido %}
+        <div class="row">
+            <!-- Recorrer cada producto del pedido -->
+            {% for producto_id, producto in pedido.items %}
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <!-- Cargar la imagen con static -->
+                        <img src="{% static producto.imagen %}" alt="Imagen de {{ producto.modelo }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ producto.modelo }}</h5>
+                            <p class="card-text">{{ producto.color }} - Talla {{ producto.talla }}</p>
+
+                            <!-- Mostrar el ID único generado dinámicamente -->
+                            {% with base_id=producto_id %}
+                                {% with cantidad_formateada=producto.cantidad|stringformat:"03d" %}
+                                    <p>ID del producto: <strong>{{ base_id }}</strong></p>
+                                {% endwith %}
+                            {% endwith %}
+
+                            <!-- Formulario para cambiar la cantidad -->
+                            <form method="POST" action="{% url 'actualizar_pedido' %}" id="form-cantidad-{{ forloop.counter }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="producto_id" value="{{ producto_id }}">
+                                <div class="mb-3">
+                                    <label for="cantidad_{{ forloop.counter }}" class="form-label">Cantidad</label>
+                                    <input type="number" name="cantidad" id="cantidad_{{ forloop.counter }}" class="form-control" min="1" value="{{ producto.cantidad }}" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning mt-3">Actualizar Cantidad</button>
+                            </form>
+
+                            <!-- Formulario para eliminar el producto -->
+                            <form method="POST" action="{% url 'eliminar_pedido' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="producto_id" value="{{ producto_id }}">
+                                <button type="submit" class="btn btn-danger mt-3">Eliminar Producto</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Alerta de cantidad no actualizada -->
+        <div id="alerta-cantidad" class="alert alert-warning mt-3" style="display: none;">
+            <strong>¡Atención!</strong> Has cambiado la cantidad, pero no has actualizado el pedido. Haz clic en "Actualizar Cantidad" para guardar los cambios.
+        </div>
+        
+        <!-- Botón para eliminar todo el pedido -->
+        <form method="POST" action="{% url 'eliminar_todo_pedido' %}">
+            {% csrf_token %}
+            <input type="hidden" name="producto_id" value="{{ producto_id }}">
+            <button type="submit" class="btn btn-danger mt-3">Eliminar Todo el Pedido</button>
+        </form>
+
+        <!-- Formulario para agregar cliente y comentario -->
+        <form method="POST" action="{% url 'generar_pedido' %}" target="_blank">
+            {% csrf_token %}
+            <div class="form-group mt-4">
+                <label for="cliente">Nombre del Cliente</label>
+                <select name="cliente" id="cliente" class="form-control" required>
+                    <option value="">Seleccione un cliente</option>
+                    {% for cliente in clientes %}
+                        <option value="{{ cliente.nombre }}">{{ cliente.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group mt-3">
+                <label for="comentario">Comentario adicional</label>
+                <textarea name="comentario" class="form-control" rows="4" placeholder="Ej: urgente, enviar a bodega, etc."></textarea>
+            </div>
+
+            <!-- Botón para generar el pedido -->
+            <div class="d-flex justify-content-between mt-4">
+                <button type="submit" class="btn btn-success">Generar Pedido</button>
+            </div>
+        </form>
+    </div>
+
+    {% else %}
+        <!-- Texto plano cuando no hay pedidos -->
+        <p>No hay pedidos disponibles. Agrega productos al carrito.</p>
+    {% endif %}
+</div>
+
+<script>
+    // Detecta cuando cambia la cantidad
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('change', function() {
+            // Muestra la alerta cuando se cambie la cantidad
+            document.getElementById('alerta-cantidad').style.display = 'block';
+        });
+    });
+    // Espera 5 segundos y luego cierra los mensajes automáticamente
+    setTimeout(function () {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function (alert) {
+            var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        });
+    }, 5000); // 5000 milisegundos = 5 segundos
+</script>
+{% endblock %}
