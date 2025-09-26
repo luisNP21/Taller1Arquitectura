@@ -1,176 +1,144 @@
-# Zodiak Inventory App 🛍️
+# Zodiak Inventory — README
 
-Un sistema de gestión de inventario construido con Django para administrar inventario de calzado, pedidos e información de clientes.
+Guía rápida para clonar, crear entorno, instalar dependencias y ejecutar el proyecto.
 
-## 🌟 Características
+---
 
-- **Autenticación de Usuarios**
-  - Sistema seguro de inicio/cierre de sesión
-  - Control de acceso basado en roles
-  - Gestión de sesiones
+## Requisitos
 
-- **Gestión de Inventario**
-  - Seguimiento de stock en tiempo real
-  - Múltiples categorías de calzado (Apache, Apolo, Amaka, Nautico, Bota, Casual)
-  - Catálogo específico por género (Colecciones para Hombres y Mujeres)
-  - Gestión de tallas y colores
-  - Seguimiento de estado del stock (Pendiente, Producción, Bodega)
+* **Python 3.13** (recomendado; funciona con 3.11+).
+* **pip** y **wheel** actualizados.
+* (Opcional) **MySQL** si vas a usar la BD en MySQL; por defecto puedes usar **SQLite**.
+* **Git**.
 
-- **Gestión de Pedidos**
-  - Funcionalidad de carrito de compras
-  - Creación y seguimiento de pedidos
-  - Generación de PDF con códigos QR
-  - Actualizaciones de estado de pedidos
-  - Historial de pedidos por cliente
+> Nota: Ya **no** se requiere Poppler. El proyecto usa **PyMuPDF (fitz)** para leer PDFs y **OpenCV** para decodificar QR.
 
-- **Gestión de Clientes**
-  - Base de datos de clientes
-  - Historial de pedidos por cliente
-  - Gestión de información de clientes
+---
 
-- **Integración de Códigos QR**
-  - Generación de códigos QR para productos
-  - Escaneo de códigos QR para actualizaciones de inventario
-  - Soporte para conversión de PDF a códigos QR
+## 1) Clonar el repositorio
 
-## 🛠️ Stack Tecnológico
-
-- **Framework Backend**: Django
-- **Base de Datos**: SQLite (predeterminado) / PostgreSQL (configurable)
-- **Frontend**: HTML, CSS, JavaScript
-- **Librerías Adicionales**:
-  - ReportLab (generación de PDF)
-  - QRCode (generación de códigos QR)
-  - OpenCV (procesamiento de imágenes)
-  - PyZBar (lectura de códigos QR)
-  - pdf2image (procesamiento de PDF)
-
-## 📋 Prerrequisitos
-
-- Python 3.8 o superior
-- pip (gestor de paquetes de Python)
-- Entorno virtual (recomendado)
-
-## 🚀 Instalación
-
-1. Clonar el repositorio:
 ```bash
-git clone https://github.com/yourusername/ZodiakInventoryApp.git
-cd ZodiakInventoryApp
+git clone <URL-DEL-REPO>
+cd <carpeta-del-repo>
 ```
 
-2. Crear y activar un entorno virtual:
+Si vas a trabajar en una rama propia (recomendado):
+
 ```bash
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+git checkout -b maria
 ```
 
-3. Instalar dependencias:
+---
+
+## 2) Crear y activar entorno virtual
+
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+### macOS / Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+> Para salir del entorno: `deactivate`
+
+---
+
+## 3) Actualizar pip / wheel
+
+```bash
+python -m pip install --upgrade pip wheel
+```
+
+---
+
+## 4) Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Ejecutar migraciones:
+### Si usas MySQL (opcional)
+
+* Asegúrate de tener MySQL corriendo y credenciales válidas en `settings.py` (o variables de entorno).
+* Instala el conector (si no está): `pip install mysqlclient`
+
+  > En Windows puede requerir **Visual C++ Build Tools**.
+
+Si no configuras MySQL, **SQLite** funciona por defecto sin pasos extra.
+
+---
+
+## 5) Variables y rutas de archivos
+
+El proyecto guarda archivos en `MEDIA_ROOT` (por defecto, `media/`):
+
+* PDFs de pedidos: `media/pdf_pedidos/`
+* Códigos QR: `qr_codes/` (la app los crea si no existen)
+
+No necesitas configuraciones especiales para desarrollo con `DEBUG=True`.
+
+---
+
+## 6) Migraciones y superusuario
+
 ```bash
 python manage.py migrate
-```
-
-5. Crear superusuario:
-```bash
 python manage.py createsuperuser
 ```
 
-6. Ejecutar el servidor de desarrollo:
+Sigue el asistente para crear el usuario admin (usuario/contraseña).
+
+---
+
+## 7) Ejecutar el servidor
+
 ```bash
 python manage.py runserver
 ```
 
-## 📁 Estructura del Proyecto
+Abre: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
-```
-ZodiakInventoryApp/
-├── app1/                    # Directorio principal de la aplicación
-│   ├── models.py           # Modelos de base de datos
-│   ├── views.py            # Lógica de vistas
-│   ├── forms.py            # Definiciones de formularios
-│   └── templates/          # Plantillas HTML
-├── static/                 # Archivos estáticos (CSS, JS, imágenes)
-├── media/                  # Archivos subidos por usuarios
-├── manage.py              # Script de gestión de Django
-└── requirements.txt       # Dependencias del proyecto
-```
+---
 
-## 🔐 Variables de Entorno
+## 8) Rutas principales (guía funcional)
 
-Crear un archivo `.env` en el directorio raíz con las siguientes variables:
+* **/** → Login
+* **/landing/** → Dashboard
+* **/categorias/** → Catálogo por categorías
+* **/ver_carrito/** → Carrito de pedido
+* **/ver_clientes/** → Listado de clientes
+* **/crear_clientes/** → Crear cliente
+* **/agregar_pedido/** → Agregar ítems (POST)
+* **/generar_pedido/** → Generar Pedido + PDF + QRs (POST)
+* **/ver_pedidos/** → Listado de pedidos
+* **/zapatos/<pedido_id>/** → Zapatos de un pedido (link al PDF)
+* **/cargar_qr/** → Subir imagen/PDF con QR para actualizar estados
+* **/ver_stock/** → Filtro y listado de stock
 
-```
-DEBUG=True
-SECRET_KEY=tu_clave_secreta
-DATABASE_URL=tu_url_de_base_de_datos
-```
+---
 
-## 📝 Uso
+## 9) Flujo recomendado de prueba
 
-1. **Acceso al Panel de Administración**
-   - Navegar a `/admin` para acceder a la interfaz de administración
-   - Iniciar sesión con las credenciales de superusuario
+1. Inicia sesión con tu **superuser**.
+2. Ve a **/categorias/** y agrega productos al carrito.
+3. En **/ver_carrito/** selecciona **cliente** y **comentarios**, luego **Generar pedido**:
 
-2. **Gestión de Inventario**
-   - Agregar nuevos productos a través de la interfaz de administración
-   - Actualizar niveles de stock
-   - Seguimiento del estado de productos
+   * Se crean **QRs** por zapato y un **PDF** del pedido en `media/pdf_pedidos/`.
+4. Cuando tengas cajas etiquetadas con los QRs, usa **/cargar_qr/**:
 
-3. **Procesamiento de Pedidos**
-   - Crear nuevos pedidos
-   - Generar códigos QR
-   - Seguimiento del estado de pedidos
-   - Generar informes PDF
+   * Sube una **imagen o PDF** de los códigos QR para actualizar el estado de los zapatos.
+5. Verifica el inventario en **/ver_stock/** con filtros por **referencia, modelo, talla, color, sexo, estado**.
 
-4. **Gestión de Clientes**
-   - Agregar nuevos clientes
-   - Ver historial de clientes
-   - Gestionar información de clientes
+---
 
-## 🔄 Flujo de Trabajo
 
-1. **Creación de Pedidos**
-   - Seleccionar productos
-   - Agregar al carrito
-   - Asignar a cliente
-   - Generar pedido
 
-2. **Proceso de Producción**
-   - Escanear códigos QR
-   - Actualizar estado de productos
-   - Seguimiento del progreso de producción
-
-3. **Actualizaciones de Inventario**
-   - Escanear códigos QR para actualizaciones de stock
-   - Actualizaciones automáticas de estado
-   - Seguimiento de inventario en tiempo real
-
-## 🤝 Contribución
-
-1. Hacer fork del repositorio
-2. Crear una rama para la nueva característica
-3. Realizar cambios
-4. Subir cambios a la rama
-5. Crear un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
-
-## 👥 Autores
-
-- @thomasSC0607 - @JuanesAo - @Maocampog1 - @luisNP21
-
-## 🙏 Agradecimientos
-
-- Documentación de Django
-- Documentación de ReportLab
-- Biblioteca QRCode
-- Comunidad de OpenCV
 
 
