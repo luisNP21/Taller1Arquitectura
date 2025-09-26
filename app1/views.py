@@ -41,23 +41,22 @@ from .forms import ClientesForm
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseNotAllowed
-from django.shortcuts import redirect
+
 from django.contrib import messages
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.views.generic import ListView, DetailView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
 from django.contrib import messages
 from abc import ABC, abstractmethod
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.contrib import messages
 import json, re, fitz, cv2, numpy as np
-
+from app1.services.qr_reader import QRReaderFacade
+from app1.services.qr_reader import QRReaderFacade
 # -----------------------------
 # Manejo de errores CSRF
 # -----------------------------
@@ -682,166 +681,77 @@ class ActualizarPedidoView(View):
 # =========================
 # CARGAR QR (dos pasos)
 # =========================
+# views.py (solo el fragmento relevante de CargarQRView.post)
+
 class CargarQRView(LoginRequiredMixin, View):
-    ESTADOS = ['Bodega', 'Pendientes', 'Producción', 'Anulado', 'Completado', 'Entregado']
+    template_name = "cargar_qr.html"
 
     def get(self, request):
         form = QRFileUploadForm()
-        return render(request, 'cargar_qr.html', {
-            'form': form,
-            'mensaje': "",
-            'estados': self.ESTADOS,
-        })
+        estados = ['Bodega', 'Pendientes', 'Producción', 'Anulado', 'Completado', 'Entregado']
+        return render(request, self.template_name, {"form": form, "estados": estados})
 
     def post(self, request):
-        mensaje = ""
-        estados = self.ESTADOS
+        estados = ['Bodega', 'Pendientes', 'Producción', 'Anulado', 'Completado', 'Entregado']
 
-        # Paso 2: el usuario ya subió archivo y ahora selecciona estado
+        # Paso 2: actualizar estado
         if 'estado_nuevo' in request.POST:
             estado_nuevo = request.POST.get('estado_nuevo')
-            zapato_infos = request.POST.getlist('zapato_info')
-            zapatos_actualizados = []
-            for zapato_id in zapato_infos:
+            zapato_ids = request.POST.getlist('zapato_info')
+            actualizados = []
+            for zid in zapato_ids:
                 try:
-                    zapato = Zapato.objects.get(id=zapato_id)
-                    zapato.estado = estado_nuevo
-                    zapato.save()
-                    zapatos_actualizados.append(zapato)
+                    z = Zapato.objects.get(id=zid)
+                    z.estado = estado_nuevo
+                    z.save()
+                    actualizados.append(z)
                 except Zapato.DoesNotExist:
                     continue
 
-            # Si hay zapatos, puedes opcionalmente tocar el pedido
-            if zapatos_actualizados:
-                zap0 = zapatos_actualizados[0]
-                if zap0.pedido_id:
-                    # Si quieres cerrar pedido, descomenta:
-                    # Pedido.objects.filter(id=zap0.pedido_id).update(estado='Completada')
-                    pass
-
-            mensaje = f"{len(zapatos_actualizados)} zapato(s) actualizado(s) a '{estado_nuevo}'."
-            return render(request, 'cargar_qr.html', {
-                'resultado': zapatos_actualizados,
-                'mensaje': mensaje,
-                'estados': estados,
+            mensaje = f"{len(actualizados)} zapato(s) actualizado(s) a '{estado_nuevo}'."
+            return render(request, self.template_name, {
+                "resultado": actualizados,
+                "mensaje": mensaje,
+                "estados": estados
             })
 
-        # Paso 1: el usuario sube PDF/imagen
+        # Paso 1: subir archivo
         form = QRFileUploadForm(request.POST, request.FILES)
         if not form.is_valid():
-            return render(request, 'cargar_qr.html', {
-                'form': QRFileUploadForm(),
-                'mensaje': "Archivo no válido.",
-                'estados': estados,
-            })
+            return render(request, self.template_name, {"form": form, "mensaje": "Archivo no válido.", "estados": estados})
 
-        archivo = form.cleaned_data['archivo']
-        nombre = archivo.name.lower()
-        imagenes = []
+        archivo = form.cleaned_data["archivo"]
+        facade = QRReaderFacade()
+        payloads = facade.extract_payloads(archivo)
 
-        if nombre.endswith('.pdf'):
-            # PDF -> imágenes con PyMuPDF (fitz)
-            data_pdf = archivo.read()
-            try:
-                doc = fitz.open(stream=data_pdf, filetype="pdf")
-            except Exception:
-                return render(request, 'cargar_qr.html', {
-                    'form': QRFileUploadForm(),
-                    'mensaje': "No se pudo leer el PDF cargado.",
-                    'estados': estados,
-                })
-            for pagina in doc:
-                pix = pagina.get_pixmap(dpi=200)  # mejor calidad para QR
-                img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
-                # fitz: RGB/RGBA → OpenCV (BGR)
-                if pix.n == 4:
-                    img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
-                else:
-                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                imagenes.append(img)
-        else:
-            # Imagen directa
-            file_bytes = np.asarray(bytearray(archivo.read()), dtype=np.uint8)
-            imagen = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-            if imagen is None:
-                return render(request, 'cargar_qr.html', {
-                    'form': QRFileUploadForm(),
-                    'mensaje': "No se pudo leer la imagen cargada.",
-                    'estados': estados,
-                })
-            imagenes.append(imagen)
+        if not payloads:
+            return render(request, self.template_name, {"form": QRFileUploadForm(), "mensaje": "No se detectaron zapatos válidos en el archivo.", "estados": estados})
 
-        # Detectar y decodificar QR con OpenCV
-        referencias_info = []
-        detector = cv2.QRCodeDetector()
-        qr_leidos = []
-
-        for img in imagenes:
-            retval, decoded_info, points, _ = detector.detectAndDecodeMulti(img)
-            if retval and decoded_info:
-                payloads = [d for d in decoded_info if d]
-            else:
-                d, pts, _ = detector.detectAndDecode(img)
-                payloads = [d] if d else []
-
-            for data in payloads:
-                data = (data or "").strip()
-                if not data:
-                    continue
-                qr_leidos.append(data)
-                data_limpia = re.sub(r'[^\x20-\x7E]+', '', data)
+        zapatos, zapato_infos = [], []
+        for p in payloads:
+            # Buscamos por ID si viene en el payload; si no, podríamos agregar fallback por referencia
+            if p.id:
                 try:
-                    info = json.loads(data_limpia)
-                    id_zapato = info.get('id')
-                    referencia = info.get('referencia')
-                    modelo = info.get('modelo')
-                    talla = info.get('talla')
-                    sexo = info.get('sexo')
-                    color = info.get('color')
-                    if referencia and modelo and talla and sexo and color:
-                        referencias_info.append({
-                            'id_zapato': id_zapato,
-                            'referencia': referencia,
-                            'modelo': modelo,
-                            'talla': talla,
-                            'sexo': sexo,
-                            'color': color,
-                        })
-                except Exception:
-                    continue
-
-        zapatos = []
-        zapato_infos = []
-        for ref in referencias_info:
-            # Primero por ID exacto
-            try:
-                if ref['id_zapato'] is not None:
-                    z = Zapato.objects.get(id=ref['id_zapato'])
+                    z = Zapato.objects.get(id=p.id)
                     zapatos.append(z)
                     zapato_infos.append(str(z.id))
                     continue
-            except (Zapato.DoesNotExist, ValueError, TypeError):
-                pass
-
-            # (Opcional) fallback por referencia:
-            # z2 = Zapato.objects.filter(referencia=ref['referencia']).first()
-            # if z2:
-            #     zapatos.append(z2)
-            #     zapato_infos.append(str(z2.id))
+                except Zapato.DoesNotExist:
+                    pass
+            # Fallback opcional por referencia:
+            # z = Zapato.objects.filter(referencia=p.referencia).first()
+            # if z:
+            #     zapatos.append(z)
+            #     zapato_infos.append(str(z.id))
 
         if not zapatos:
-            return render(request, 'cargar_qr.html', {
-                'form': QRFileUploadForm(),
-                'mensaje': "No se detectaron zapatos válidos en el archivo.",
-                'estados': estados,
-            })
+            return render(request, self.template_name, {"form": QRFileUploadForm(), "mensaje": "No se encontraron coincidencias en la base de datos.", "estados": estados})
 
-        # Mostrar lista + radios de estado (paso 2)
-        return render(request, 'cargar_qr.html', {
-            'zapatos': zapatos,
-            'zapato_infos': zapato_infos,
-            'estados': estados,
-            'mostrar_estado': True,
+        return render(request, self.template_name, {
+            "zapatos": zapatos,
+            "zapato_infos": zapato_infos,
+            "estados": estados,
+            "mostrar_estado": True
         })
 
 
