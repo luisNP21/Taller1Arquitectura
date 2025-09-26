@@ -18,8 +18,7 @@ import qrcode
 import cv2
 import re
 import numpy as np
-from pyzbar.pyzbar import decode
-from pdf2image import convert_from_bytes
+import fitz  
 from django.db.models import Q
 
 # -----------------------------
@@ -511,7 +510,8 @@ def cargar_qr(request):
     mensaje = ""
     resultado = []
     qr_leidos = []
-    estados = ['Bodega', 'Pendiente', 'Producción', 'Anulado', 'Completado', 'Entregado']
+    # 👇 Usa 'Pendientes' (plural) para ser consistente con el resto del proyecto
+    estados = ['Bodega', 'Pendientes', 'Producción', 'Anulado', 'Completado', 'Entregado']
     zapatos = []
     mostrar_estado = False
 
@@ -529,11 +529,20 @@ def cargar_qr(request):
                     zapatos_actualizados.append(zapato)
                 except Zapato.DoesNotExist:
                     continue
-            zapato_aux = zapatos_actualizados[0]
-            pedido_zapato = zapato_aux.pedido
-            pedido = Pedido.objects.get(id=pedido_zapato.id)
-            pedido.estado = 'Completada'
-            pedido.save()
+
+            # Evita indexar si la lista está vacía
+            if zapatos_actualizados:
+                zapato_aux = zapatos_actualizados[0]
+                pedido_zapato = zapato_aux.pedido
+                if pedido_zapato:
+                    try:
+                        pedido = Pedido.objects.get(id=pedido_zapato.id)
+                        # Si quieres cerrar el pedido cuando cambias estado:
+                        # pedido.estado = 'Completada'
+                        # pedido.save()
+                    except Pedido.DoesNotExist:
+                        pass
+
             mensaje = f"{len(zapatos_actualizados)} zapato(s) actualizado(s) a '{estado_nuevo}'."
             return render(request, 'cargar_qr.html', {
                 'resultado': zapatos_actualizados,
@@ -547,24 +556,63 @@ def cargar_qr(request):
             archivo = form.cleaned_data['archivo']
             nombre = archivo.name.lower()
             imagenes = []
+
             if nombre.endswith('.pdf'):
-                paginas = convert_from_bytes(archivo.read())
-                for pagina in paginas:
-                    imagen = np.array(pagina)
-                    imagenes.append(cv2.cvtColor(imagen, cv2.COLOR_RGB2BGR))
+                # === PDF -> imágenes con PyMuPDF (fitz) ===
+                data_pdf = archivo.read()
+                try:
+                    doc = fitz.open(stream=data_pdf, filetype="pdf")
+                except Exception:
+                    mensaje = "No se pudo leer el PDF cargado."
+                    return render(request, 'cargar_qr.html', {
+                        'form': QRFileUploadForm(),
+                        'mensaje': mensaje,
+                        'estados': estados,
+                    })
+                for pagina in doc:
+                    pix = pagina.get_pixmap(dpi=200)  # mejor calidad para QR
+                    img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
+                    # fitz entrega RGB/RGBA → pasamos a BGR (más fiable con OpenCV)
+                    if pix.n == 4:
+                        img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+                    else:
+                        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    imagenes.append(img)
             else:
+                # === Imagen directa ===
                 file_bytes = np.asarray(bytearray(archivo.read()), dtype=np.uint8)
                 imagen = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+                if imagen is None:
+                    mensaje = "No se pudo leer la imagen cargada."
+                    return render(request, 'cargar_qr.html', {
+                        'form': QRFileUploadForm(),
+                        'mensaje': mensaje,
+                        'estados': estados,
+                    })
                 imagenes.append(imagen)
 
             referencias_info = []
+            detector = cv2.QRCodeDetector()
+
             for img in imagenes:
-                for qr in decode(img):
-                    data = qr.data.decode('utf-8').strip()
+                # Intento múltiple
+                retval, decoded_info, points, _ = detector.detectAndDecodeMulti(img)
+                if retval and decoded_info:
+                    payloads = [d for d in decoded_info if d]
+                else:
+                    # Fallback: único QR
+                    d, pts, _ = detector.detectAndDecode(img)
+                    payloads = [d] if d else []
+
+                for data in payloads:
+                    data = data.strip()
+                    if not data:
+                        continue
                     qr_leidos.append(data)
-                    data = re.sub(r'[^\x20-\x7E]+', '', data)
+                    # Limpia caracteres raros
+                    data_limpia = re.sub(r'[^\x20-\x7E]+', '', data)
                     try:
-                        info = json.loads(data)
+                        info = json.loads(data_limpia)
                         id_zapato = info.get('id')
                         referencia = info.get('referencia')
                         modelo = info.get('modelo')
@@ -586,12 +634,30 @@ def cargar_qr(request):
             zapatos = []
             zapato_infos = []
             for ref in referencias_info:
+                # Búsqueda por id del QR
                 try:
-                    zapato = Zapato.objects.get(id=ref['id_zapato'])
-                    zapatos.append(zapato)
-                    zapato_infos.append(str(zapato.id))
-                except Zapato.DoesNotExist:
-                    continue
+                    if ref['id_zapato'] is not None:
+                        zapato = Zapato.objects.get(id=ref['id_zapato'])
+                        zapatos.append(zapato)
+                        zapato_infos.append(str(zapato.id))
+                        continue
+                except (Zapato.DoesNotExist, ValueError, TypeError):
+                    pass
+
+                # (Opcional) Fallback por referencia:
+                # z = Zapato.objects.filter(referencia=ref['referencia']).first()
+                # if z:
+                #     zapatos.append(z)
+                #     zapato_infos.append(str(z.id))
+
+            if not zapatos:
+                mensaje = "No se detectaron zapatos válidos en el archivo."
+                return render(request, 'cargar_qr.html', {
+                    'form': QRFileUploadForm(),
+                    'mensaje': mensaje,
+                    'estados': estados,
+                })
+
             mostrar_estado = True
             return render(request, 'cargar_qr.html', {
                 'zapatos': zapatos,
@@ -610,6 +676,8 @@ def cargar_qr(request):
         'estados': estados,
     })
 
+# -----------------------------
+# Ver Stock de Zapatos
 @login_required
 def ver_stock(request):
     zapatos = Zapato.objects.all()
