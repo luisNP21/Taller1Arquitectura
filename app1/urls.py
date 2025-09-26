@@ -1,54 +1,69 @@
-from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from . import views
-from django.shortcuts import render
-from .views import login_view, landing_view, logout_view, categorias_view
+from django.urls import path
+
+from .views import (
+    # Auth / landing
+    LoginView, LogoutView, LandingView,
+
+    # Categorías
+    CategoriasView,
+    ApacheHombreView, ApoloHombreView, AmakaHombreView,
+    NauticoHombreView, BotaHombreView, CasualHombreView,
+    ApacheMujerView, BotaMujerView,
+
+    # Clientes / carrito / pedidos
+    VerClientesView, CrearClientesView, VerCarritoView,
+    AgregarPedidoView, GenerarPedidoView,
+
+    # Gestión de pedidos y sus zapatos
+    PedidoListView, PedidoZapatosView,
+    EliminarPedidoView, EliminarTodoPedidoView, ActualizarPedidoView,
+
+    # QR / Stock
+    CargarQRView, VerStockView,
+)
 
 urlpatterns = [
-    path('', login_view, name='login'),  
-    path('landing/', landing_view, name='landing'),  
-    path('logout/', logout_view, name='logout'), 
-    
-    # Pagina para ver stock
-    path('ver_stock/', views.ver_stock, name='ver_stock'),
-    
-    #Pagina para pedidos
-    
-    path('agregar_pedido/', views.agregar_pedido, name='agregar_pedido'),
-    path('ver_carrito/', views.ver_carrito, name='ver_carrito'), 
-    path('ver_clientes/', views.ver_clientes, name='ver_clientes'), 
-    path('ver_pedidos/', views.ver_pedidos, name='ver_pedidos'), 
-    path('crear_clientes/', views.crear_clientes, name='crear_clientes'),
-    path('eliminar_pedido/', views.eliminar_pedido, name='eliminar_pedido'),
-    path('eliminar_todo_pedido/', views.eliminar_todo_pedido, name='eliminar_todo_pedido'),
-    path('actualizar_pedido/', views.actualizar_pedido, name='actualizar_pedido'),
-    path('generar_pedido/', views.generar_pedido, name='generar_pedido'),
-    path('zapatos/<int:pedido_id>/', views.ver_zapatos_pedido, name='ver_zapatos_pedido'),
-    
-    
-    # Página principal de categorías
-    path("categorias/", categorias_view, name="categorias"),
+    # Auth
+    path("", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("landing/", LandingView.as_view(), name="landing"),
 
-    # Páginas individuales por categoría
-    path("categorias/apache_hombre/", lambda r: render(r, "categories/apache_hombre.html"), name="apache_hombre"),
-    path("categorias/apolo_hombre/", lambda r: render(r, "categories/apolo_hombre.html"), name="apolo_hombre"),
-    path("categorias/amaka_hombre/", lambda r: render(r, "categories/amaka_hombre.html"), name="amaka_hombre"),
-    path("categorias/nautico_hombre/", lambda r: render(r, "categories/nautico_hombre.html"), name="nautico_hombre"),
-    path("categorias/bota_hombre/", lambda r: render(r, "categories/bota_hombre.html"), name="bota_hombre"),
-    path("categorias/casual_hombre/", lambda r: render(r, "categories/casual_hombre.html"), name="casual_hombre"),
-    path("categorias/apache_mujer/", lambda r: render(r, "categories/apache_mujer.html"), name="apache_mujer"),
-    path("categorias/bota_mujer/", lambda r: render(r, "categories/bota_mujer.html"), name="bota_mujer"),
+    # Stock
+    path("ver_stock/", VerStockView.as_view(), name="ver_stock"),
 
+    # Clientes / carrito / pedidos
+    path("ver_clientes/", VerClientesView.as_view(), name="ver_clientes"),
+    path("crear_clientes/", CrearClientesView.as_view(), name="crear_clientes"),
+    path("ver_carrito/", VerCarritoView.as_view(), name="ver_carrito"),
+    path("agregar_pedido/", AgregarPedidoView.as_view(), name="agregar_pedido"),
+    path("generar_pedido/", GenerarPedidoView.as_view(), name="generar_pedido"),
 
-    path("zapatos/amaka_hombre/", views.amaka_hombre_view, name="amaka_hombre"),
-    path("zapatos/apache_hombre/", views.apache_hombre_view, name="apache_hombre"),
-    path("zapatos/apolo_hombre/", views.apolo_hombre_view, name="apolo_hombre"),
-    path("zapatos/bota_hombre/", views.bota_hombre_view, name="bota_hombre"),
-    path("zapatos/casual_hombre/", views.casual_hombre_view, name="casual_hombre"),
-    path("zapatos/nautico_hombre/", views.nautico_hombre_view, name="nautico_hombre"),
-    path("zapatos/apache_mujer/", views.apache_mujer_view, name="apache_mujer"),
-    path("zapatos/bota_mujer/", views.bota_mujer_view, name="bota_mujer"),
-    path('cargar_qr/', views.cargar_qr, name='cargar_qr'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Listado de pedidos y detalle de zapatos de un pedido
+    path("ver_pedidos/", PedidoListView.as_view(), name="ver_pedidos"),
+    path("zapatos/<int:pedido_id>/", PedidoZapatosView.as_view(), name="ver_zapatos_pedido"),
 
+    # Acciones sobre el carrito/pedido
+    path("eliminar_pedido/", EliminarPedidoView.as_view(), name="eliminar_pedido"),
+    path("eliminar_todo_pedido/", EliminarTodoPedidoView.as_view(), name="eliminar_todo_pedido"),
+    path("actualizar_pedido/", ActualizarPedidoView.as_view(), name="actualizar_pedido"),
+
+    # Carga de QR
+    path("cargar_qr/", CargarQRView.as_view(), name="cargar_qr"),
+
+    # Categorías (los names se mantienen)
+    path("categorias/", CategoriasView.as_view(), name="categorias"),
+    path("zapatos/apache_hombre/", ApacheHombreView.as_view(), name="apache_hombre"),
+    path("zapatos/apolo_hombre/", ApoloHombreView.as_view(), name="apolo_hombre"),
+    path("zapatos/amaka_hombre/", AmakaHombreView.as_view(), name="amaka_hombre"),
+    path("zapatos/nautico_hombre/", NauticoHombreView.as_view(), name="nautico_hombre"),
+    path("zapatos/bota_hombre/", BotaHombreView.as_view(), name="bota_hombre"),
+    path("zapatos/casual_hombre/", CasualHombreView.as_view(), name="casual_hombre"),
+    path("zapatos/apache_mujer/", ApacheMujerView.as_view(), name="apache_mujer"),
+    path("zapatos/bota_mujer/", BotaMujerView.as_view(), name="bota_mujer"),
+]
+
+# Servir MEDIA en desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
