@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h2 class="fw-bold" style="letter-spacing:0.5px;">Resultados de búsqueda</h2>
+    <form method="get" action="{% url 'buscar_productos' %}" class="d-inline-flex justify-content-center mt-2" style="gap:8px; max-width:600px;">
+            <input type="search" name="q" value="{{ query }}" 
+                         placeholder="Buscar productos" 
+                         class="form-control" 
+                         style="min-width:280px; border-radius:20px;">
+            <button type="submit" class="btn btn-green" style="border-radius:20px;">Buscar</button>
+    </form>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        {% if resultados %}
+            {% for zapato in resultados %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm" style="border-radius: 10px; border: 1px solid #e0e0e0;">
+                    
+                    <!-- Imagen -->
+                    {% if zapato.imagen_categoria %}
+                        <img src="{% static zapato.imagen_categoria %}" 
+                             class="card-img-top" 
+                             alt="{{ zapato.modelo }}" 
+                             style="height: 250px; object-fit: cover; border-radius: 10px;">
+                    {% else %}
+                        <img src="{% static 'images/default_zapato.png' %}" 
+                             class="card-img-top" 
+                             alt="Sin imagen" 
+                             style="height: 250px; object-fit: cover; border-radius: 10px;">
+                    {% endif %}
+
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-dark">
+                            {{ zapato.modelo }}
+                            {% if zapato.sexo == 'H' %} Hombre{% elif zapato.sexo == 'M' %} Mujer{% endif %}
+                        </h5>
+                        {% if zapato.referencia %}
+                        <p class="text-muted" style="font-size:0.85rem; margin-top:-6px;">Ref: {{ zapato.referencia }}</p>
+                        {% endif %}
+
+                        <!-- Formulario para agregar al pedido -->
+                        <form method="POST" action="{% url 'agregar_pedido' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="modelo" value="{{ zapato.modelo }}">
+                            <input type="hidden" name="sexo" value="{{ zapato.sexo }}">
+                            <input type="hidden" name="imagen" value="{{ zapato.imagen_categoria }}">
+
+                            <!-- Select Color -->
+                            <div class="mb-3">
+                                <label for="color_{{ forloop.counter }}" class="form-label">Color</label>
+                                <select name="color" id="color_{{ forloop.counter }}" class="form-select" required>
+                                    {% for color in colores %}
+                                        <option value="{{ color }}" {% if color == zapato.color %}selected{% endif %}>{{ color }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Select Talla -->
+                            <div class="mb-3">
+                                <label for="talla_{{ forloop.counter }}" class="form-label">Talla</label>
+                                <select name="talla" id="talla_{{ forloop.counter }}" class="form-select" required>
+                                    {% for talla in tallas %}
+                                        <option value="{{ talla }}" {% if talla == zapato.talla %}selected{% endif %}>{{ talla }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Requerimientos -->
+                            <div class="mb-3">
+                                <label for="requerimientos_{{ forloop.counter }}" class="form-label">Requerimientos</label>
+                                <input type="text" name="requerimientos" id="requerimientos_{{ forloop.counter }}" 
+                                       class="form-control" placeholder="Ingrese los requerimientos para este zapato">
+                            </div>
+
+                            <!-- Observaciones -->
+                            <div class="mb-3">
+                                <label for="observaciones_{{ forloop.counter }}" class="form-label">Observaciones</label>
+                                <input type="text" name="observaciones" id="observaciones_{{ forloop.counter }}" 
+                                       class="form-control" placeholder="Ingrese observaciones si aplican">
+                            </div>
+
+                            <button type="submit" class="btn" 
+                                    style="background-color: #28a745; color: white; border-radius: 5px; padding: 10px; width: 100%; font-weight: bold;">
+                                Agregar al pedido
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No se encontraron productos.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

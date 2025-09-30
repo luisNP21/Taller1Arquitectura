@@ -43,7 +43,11 @@
             <a class="navbar-brand" href="#">
                 <img src="{% static 'images/logo2.png' %}" alt="Logo Zodiak">
             </a>
-            <div class="d-flex align-items-center">
+                <form class="d-flex me-3" method="get" action="{% url 'buscar_productos' %}" style="max-width:480px;flex:1;">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Buscar productos" aria-label="Buscar" style="border-radius:20px;">
+                    <button class="btn btn-green" type="submit">Buscar</button>
+                </form>
+                <div class="d-flex align-items-center">
                 <a href="{% url 'landing' %}" class="btn btn-green me-2">Inicio</a>
                 <a href="{% url 'categorias' %}" class="btn btn-green me-2">Categorías</a>
                 <a href="{% url 'ver_carrito' %}" class="btn btn-green me-2">Ver Carrito</a>

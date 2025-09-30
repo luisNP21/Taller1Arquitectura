@@ -11,6 +11,7 @@ from .views import (
     ApacheHombreView, ApoloHombreView, AmakaHombreView,
     NauticoHombreView, BotaHombreView, CasualHombreView,
     ApacheMujerView, BotaMujerView,
+        BuscarProductosView,
 
     # Clientes / carrito / pedidos
     VerClientesView, CrearClientesView, VerCarritoView,
@@ -62,6 +63,7 @@ urlpatterns = [
     path("zapatos/casual_hombre/", CasualHombreView.as_view(), name="casual_hombre"),
     path("zapatos/apache_mujer/", ApacheMujerView.as_view(), name="apache_mujer"),
     path("zapatos/bota_mujer/", BotaMujerView.as_view(), name="bota_mujer"),
+    path("buscar_productos/", BuscarProductosView.as_view(), name="buscar_productos"),
 ]
 
 # Servir MEDIA en desarrollo
