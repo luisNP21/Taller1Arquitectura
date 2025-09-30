@@ -18,8 +18,8 @@ Guía rápida para clonar, crear entorno, instalar dependencias y ejecutar el pr
 ## 1) Clonar el repositorio
 
 ```bash
-git clone <URL-DEL-REPO>
-cd <carpeta-del-repo>
+git clone https://github.com/luisNP21/Taller1Arquitectura.git
+cd Taller1Arquitectura
 ```
 
 Si vas a trabajar en una rama propia (recomendado):
