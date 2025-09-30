@@ -2,15 +2,16 @@
 {% load static %}
 
 {% block content %}
-<h2>Resultados de búsqueda</h2>
-
-<form method="get" action="{% url 'buscar_productos' %}" class="mb-3">
-    <input type="search" name="q" value="{{ query }}" 
-           placeholder="Buscar productos" 
-           class="form-control" 
-           style="max-width:300px;display:inline-block;">
-    <button type="submit" class="btn btn-success">Buscar</button>
-</form>
+<div class="text-center mb-4">
+    <h2 class="fw-bold" style="letter-spacing:0.5px;">Resultados de búsqueda</h2>
+    <form method="get" action="{% url 'buscar_productos' %}" class="d-inline-flex justify-content-center mt-2" style="gap:8px; max-width:600px;">
+            <input type="search" name="q" value="{{ query }}" 
+                         placeholder="Buscar productos" 
+                         class="form-control" 
+                         style="min-width:280px; border-radius:20px;">
+            <button type="submit" class="btn btn-green" style="border-radius:20px;">Buscar</button>
+    </form>
+</div>
 
 <div class="container mt-4">
     <div class="row">
