@@ -11,9 +11,9 @@ Guía rápida para clonar, crear entorno, instalar dependencias y ejecutar el pr
 * (Opcional) **MySQL** si vas a usar la BD en MySQL; por defecto puedes usar **SQLite**.
 * **Git**.
 
-> Nota: Ya **no** se requiere Poppler. El proyecto usa **PyMuPDF (fitz)** para leer PDFs y **OpenCV** para decodificar QR.
 
 ---
+
 
 ## 1) Clonar el repositorio
 
@@ -105,6 +105,13 @@ python manage.py runserver
 
 Abre: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
+---
+## Nota importante
+
+Para iniciar sesión a la hora de ejecutar puedes usar el siguiente superusuario:
+
+- **Usuario:** `admin1`  
+- **Contraseña:** `Z0d14k000`
 ---
 
 ## 8) Rutas principales (guía funcional)
