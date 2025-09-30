@@ -62,6 +62,7 @@ class Zapato(models.Model):
     requerimientos = models.TextField()
     observaciones = models.TextField(default='Sin observaciones', null=True, blank=True) # El campo observaciones es opcional    
     pedido = models.ForeignKey('Pedido', on_delete=models.CASCADE, null=True, blank=True) # Relación uno a muchos con la tabla Pedido
+    imagen = models.CharField(max_length=150, null=True, blank=True)
 
 class Cliente(models.Model):
     nombre = models.CharField(max_length=100, unique=True)

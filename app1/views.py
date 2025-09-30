@@ -1,61 +1,40 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout
-from django.contrib import messages
-from django.conf import settings
-from django.utils import timezone
-from string import ascii_uppercase
-from django.http import JsonResponse, HttpResponse
-from .forms import ClientesForm, ZapatoForm, QRFileUploadForm
-from .models import Cliente, Zapato, Pedido
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from io import BytesIO
+
+
+# Standard library
 import os
 import json
+import re
+from io import BytesIO
+from string import ascii_uppercase
+from abc import ABC, abstractmethod
+
+# Third-party libs
 import qrcode
 import cv2
-import re
 import numpy as np
-import fitz  
-from django.db.models import Q
+import fitz
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
-from django.views import View
-from django.shortcuts import render
+# Django
+from django.conf import settings
+from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.urls import reverse_lazy
-from django.views import View
-from django.views.generic import FormView
-from django.views.generic import TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from string import ascii_uppercase
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, CreateView, TemplateView
-from django.urls import reverse_lazy
-from django.contrib import messages
-from .models import Cliente
-from .forms import ClientesForm
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseNotAllowed
-
-from django.contrib import messages
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseNotAllowed
-from django.views.generic import ListView, DetailView, View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib import messages
-from abc import ABC, abstractmethod
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
 from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render
-from django.contrib import messages
-import json, re, fitz, cv2, numpy as np
-from app1.services.qr_reader import QRReaderFacade
+from django.views.generic import (
+    FormView, TemplateView, ListView, CreateView, DetailView
+)
+
+# Local
+from .forms import ClientesForm, ZapatoForm, QRFileUploadForm
+from .models import Cliente, Zapato, Pedido
 from app1.services.qr_reader import QRReaderFacade
 # -----------------------------
 # Manejo de errores CSRF
@@ -118,7 +97,7 @@ class LogoutView(View):
     # Permitimos GET por si tu botón es un enlace simple
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
-    
+ 
 # imports nuevos
 from django.views.generic import TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -822,3 +801,44 @@ class VerStockView(LoginRequiredMixin, View):
             "estado_sel": estado_sel,
         })
         return render(request, self.template_name, context)
+
+
+# =============================
+# Búsqueda de productos
+# =============================
+from django.db.models import Q
+from .models import Zapato
+from django.views import View
+
+class BuscarProductosView(LoginRequiredMixin, View):
+    template_name = "buscar_productos.html"
+
+    def get(self, request):
+        query = request.GET.get("q", "").strip()
+
+        qs = Zapato.objects.all()
+        if query:
+            qs = qs.filter(
+                Q(referencia__icontains=query) |
+                Q(modelo__icontains=query) |
+                Q(color__icontains=query) |
+                Q(sexo__icontains=query[:1].upper())  
+            )
+
+        resultados = []
+        for z in qs.order_by("modelo", "sexo", "referencia"):
+           
+            if z.imagen:
+                z.imagen_categoria = z.imagen
+            else:
+                sufijo = 'H' if z.sexo == 'H' else 'M'
+                z.imagen_categoria = f"images/{z.modelo}{sufijo}1.png"
+            resultados.append(z)
+
+        return render(request, self.template_name, {
+            "resultados": resultados,
+            "query": query,
+            "colores": COLORES,
+            "tallas": TALLAS,
+        })
+
