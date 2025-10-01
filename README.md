@@ -6,7 +6,7 @@ Guía rápida para clonar, crear entorno, instalar dependencias y ejecutar el pr
 
 ## Requisitos
 
-* **Python 3.13** (recomendado; funciona con 3.11+).
+* **Python 3.12** (recomendado; funciona con 3.11+, sin embargo, el 3.13 puede hacer que alguna librería no funcione).
 * **pip** y **wheel** actualizados.
 * (Opcional) **MySQL** si vas a usar la BD en MySQL; por defecto puedes usar **SQLite**.
 * **Git**.
