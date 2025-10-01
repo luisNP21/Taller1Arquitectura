@@ -134,3 +134,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'app1/static')]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_FAILURE_VIEW = 'app1.views.csrf_failure'
+
+
+# Implementación por defecto de QRReader
+QR_READER_CLASS = "app1.services.opencv_qr_reader.OpenCVQRReader"
