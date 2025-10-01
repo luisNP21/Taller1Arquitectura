@@ -19,6 +19,7 @@ from reportlab.lib.pagesizes import letter
 # Django
 from django.conf import settings
 from django.utils import timezone
+from django.utils.module_loading import import_string
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -33,9 +34,11 @@ from django.views.generic import (
 )
 
 # Local
+from .services.qr_service import QRService
+from .services.qr_reader import QRReader
 from .forms import ClientesForm, ZapatoForm, QRFileUploadForm
 from .models import Cliente, Zapato, Pedido
-from app1.services.qr_reader import QRReaderFacade
+
 # -----------------------------
 # Manejo de errores CSRF
 # -----------------------------
@@ -695,43 +698,72 @@ class CargarQRView(LoginRequiredMixin, View):
             })
 
         # Paso 1: subir archivo
+
         form = QRFileUploadForm(request.POST, request.FILES)
         if not form.is_valid():
-            return render(request, self.template_name, {"form": form, "mensaje": "Archivo no válido.", "estados": estados})
+            return render(request, self.template_name, {
+                "form": form,
+                "mensaje": "Archivo no válido.",
+                "estados": estados
+            })
 
         archivo = form.cleaned_data["archivo"]
-        facade = QRReaderFacade()
-        payloads = facade.extract_payloads(archivo)
+
+        # Cargar implementación desde settings
+        cls_path = getattr(
+            settings,
+            "QR_READER_CLASS",
+            "app1.services.opencv_qr_reader.OpenCVQRReader"
+        )
+        ReaderClass = import_string(cls_path)
+        service = QRService(ReaderClass())
+
+        # Convertir archivo en imagen OpenCV
+        # Leer archivo en bytes
+        file_bytes = archivo.read()
+
+
+
+        # Decodificar QR (puede traer 1 o varios)
+        payloads = service.extract_payloads(archivo)
 
         if not payloads:
-            return render(request, self.template_name, {"form": QRFileUploadForm(), "mensaje": "No se detectaron zapatos válidos en el archivo.", "estados": estados})
+            return render(request, self.template_name, {
+                "form": QRFileUploadForm(),
+                "mensaje": "No se detectaron zapatos válidos en el archivo.",
+                "estados": estados
+            })
 
         zapatos, zapato_infos = [], []
-        for p in payloads:
-            # Buscamos por ID si viene en el payload; si no, podríamos agregar fallback por referencia
-            if p.id:
-                try:
-                    z = Zapato.objects.get(id=p.id)
+
+        for payload in payloads:
+            try:
+                referencia = payload.get("referencia")
+                zapato_id = payload.get("id")
+
+                if zapato_id:
+                    # Si algún QR futuro trae id, usamos eso
+                    z = Zapato.objects.filter(id=zapato_id).first()
+                elif referencia:
+                    # Buscar por referencia (insensible a mayúsculas/minúsculas)
+                    z = Zapato.objects.filter(referencia__iexact=referencia).first()
+                else:
+                    z = None
+
+                if z:
                     zapatos.append(z)
                     zapato_infos.append(str(z.id))
-                    continue
-                except Zapato.DoesNotExist:
-                    pass
-            # Fallback opcional por referencia:
-            # z = Zapato.objects.filter(referencia=p.referencia).first()
-            # if z:
-            #     zapatos.append(z)
-            #     zapato_infos.append(str(z.id))
+
+            except Zapato.DoesNotExist:
+                continue
 
         if not zapatos:
-            return render(request, self.template_name, {"form": QRFileUploadForm(), "mensaje": "No se encontraron coincidencias en la base de datos.", "estados": estados})
+            return render(request, self.template_name, {
+                "form": QRFileUploadForm(),
+                "mensaje": "No se encontraron coincidencias en la base de datos.",
+                "estados": estados
+            })
 
-        return render(request, self.template_name, {
-            "zapatos": zapatos,
-            "zapato_infos": zapato_infos,
-            "estados": estados,
-            "mostrar_estado": True
-        })
 
 
 # =========================
